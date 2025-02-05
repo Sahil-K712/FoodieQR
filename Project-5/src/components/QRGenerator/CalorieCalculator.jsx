@@ -1,175 +1,284 @@
 import React, { useState, useEffect } from "react";
-import { PlusCircle, MinusCircle } from "lucide-react";
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useCart } from '../../context/CartContext'; // Make sure this is created
+import {
+  Container,
+  Paper,
+  Typography,
+  Box,
+  Grid,
+  Button,
+  IconButton,
+  Divider,
+  Chip,
+  Fade,
+  Slider,
+  Alert,
+  Snackbar
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Remove as RemoveIcon,
+  ShoppingCart,
+  Restaurant,
+  Timer,
+  Info as InfoIcon
+} from '@mui/icons-material';
+import { motion } from 'framer-motion';
 
-const DishTracker = ({ id }) => {
-  const [dish, setDish] = useState(null);
+const CalorieCalculator = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
   const [loading, setLoading] = useState(true);
+  const [dish, setDish] = useState(null);
   const [error, setError] = useState(null);
   const [servings, setServings] = useState(1);
   const [calculatedNutrition, setCalculatedNutrition] = useState(null);
+  const [showAlert, setShowAlert] = useState(false);
 
   useEffect(() => {
-    const fetchDish = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`https://project02-a6ab2-default-rtdb.firebaseio.com/dishes/${id}.json`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch dish");
-        }
-        const data = await response.json();
-        if (!data) {
-          throw new Error("Dish not found");
-        }
-        setDish(data);
-        setCalculatedNutrition(calculateNutrition(data.items, servings));
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+    setLoading(true);
+    try {
+      const params = new URLSearchParams(location.search);
+      const dishData = params.get('data');
+      if (dishData) {
+        const parsedDish = JSON.parse(decodeURIComponent(dishData));
+        setDish(parsedDish);
+        setCalculatedNutrition(calculateNutrition(parsedDish.totalNutrition, servings));
       }
-    };
-
-    if (id) {
-      fetchDish();
+    } catch (err) {
+      setError('Invalid dish data');
     }
-  }, [id]);
+    setLoading(false);
+  }, [location]);
+
+  const calculateNutrition = (nutrition, servingCount) => {
+    if (!nutrition) return null;
+    return Object.entries(nutrition).reduce((acc, [key, value]) => ({
+      ...acc,
+      [key]: Number((value * servingCount).toFixed(1))
+    }), {});
+  };
 
   useEffect(() => {
-    if (dish?.items) {
-      setCalculatedNutrition(calculateNutrition(dish.items, servings));
+    if (dish?.totalNutrition) {
+      setCalculatedNutrition(calculateNutrition(dish.totalNutrition, servings));
     }
   }, [servings, dish]);
 
-  const calculateNutrition = (items, servingCount) => {
-    const totalNutrition = items.reduce(
-      (totals, item) => {
-        const quantityFactor = item.quantity / 100; // Assuming nutrition values are per 100g/unit
-        return {
-          calories: totals.calories + item.caloriesPerUnit * quantityFactor,
-          protein: totals.protein + item.nutrition.protein * quantityFactor,
-          carbohydrates: totals.carbohydrates + item.nutrition.carbohydrates * quantityFactor,
-          fats: totals.fats + item.nutrition.fats * quantityFactor,
-          fiber: totals.fiber + item.nutrition.fiber * quantityFactor,
-          sugar: totals.sugar + item.nutrition.sugar * quantityFactor,
-        };
-      },
-      { calories: 0, protein: 0, carbohydrates: 0, fats: 0, fiber: 0, sugar: 0 }
-    );
-
-    return {
-      calories: (totalNutrition.calories || 0) * servingCount,
-      protein: (totalNutrition.protein || 0) * servingCount,
-      carbohydrates: (totalNutrition.carbohydrates || 0) * servingCount,
-      fats: (totalNutrition.fats || 0) * servingCount,
-      fiber: (totalNutrition.fiber || 0) * servingCount,
-      sugar: (totalNutrition.sugar || 0) * servingCount,
+  const handleAddToCart = () => {
+    const cartItem = {
+      id: dish.id,
+      name: dish.name,
+      price: dish.price,
+      quantity: servings,
+      totalPrice: dish.price * servings,
+      nutrition: calculatedNutrition
     };
+    addToCart(cartItem);
+    setShowAlert(true);
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
-      </div>
+      <Box 
+        display="flex" 
+        justifyContent="center" 
+        alignItems="center" 
+        minHeight="100vh"
+        sx={{ background: 'linear-gradient(145deg, #f6f8ff 0%, #f0f4ff 100%)' }}
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        >
+          <Restaurant sx={{ fontSize: 40, color: 'primary.main' }} />
+        </motion.div>
+      </Box>
     );
   }
 
-  if (error) {
+  if (error || !dish) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-lg text-red-600">Error: {error}</p>
-      </div>
-    );
-  }
-
-  if (!dish) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-lg text-gray-600">No dish found</p>
-      </div>
+      <Container maxWidth="sm" sx={{ mt: 4, textAlign: 'center' }}>
+        <Paper elevation={3} sx={{ p: 4 }}>
+          <Typography color="error" variant="h6">{error || 'Dish not found'}</Typography>
+          <Button
+            variant="contained"
+            onClick={() => navigate('/')}
+            sx={{ mt: 2 }}
+          >
+            Back to Menu
+          </Button>
+        </Paper>
+      </Container>
     );
   }
 
   return (
-    <div
-      className="min-h-screen bg-cover bg-center p-6"
-      style={{ backgroundImage: "url('/food-bg-image.jpg')" }}
-    >
-      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6 opacity-90">
-        <h2 className="text-3xl font-bold mb-4 text-gray-800 text-center">{dish.name}</h2>
-        
-        <div className="flex flex-col md:flex-row gap-6 mb-4">
-          <img
-            src={dish.image || "/api/placeholder/400/300"}
-            alt={dish.name}
-            className="w-full md:w-1/3 h-48 object-cover rounded-lg shadow-md"
-          />
-          
-          <div className="flex-1">
-            <p className="text-gray-600 mb-4">{dish.description}</p>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Paper 
+        elevation={3}
+        sx={{
+          overflow: 'hidden',
+          borderRadius: 4,
+          background: 'linear-gradient(145deg, #ffffff 0%, #f8f9ff 100%)'
+        }}
+      >
+        <Grid container>
+          {/* Left Side - Image */}
+          <Grid item xs={12} md={6}>
+            <Box
+              sx={{
+                height: '100%',
+                minHeight: 400,
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              <motion.img
+                initial={{ scale: 1.1 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.5 }}
+                src={`/images/dishes/${dish.image}`}
+                alt={dish.name}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+                onError={(e) => {
+                  e.target.src = 'https://via.placeholder.com/400x400?text=Food+Image';
+                }}
+              />
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+                  p: 2,
+                  color: 'white'
+                }}
+              >
+                <Typography variant="h4">{dish.name}</Typography>
+                <Chip
+                  icon={<Timer />}
+                  label={dish.prepTime}
+                  sx={{ mt: 1, bgcolor: 'rgba(255,255,255,0.9)' }}
+                />
+              </Box>
+            </Box>
+          </Grid>
 
-            {/* Nutrition Information */}
-            <h3 className="font-semibold text-lg mb-2">Nutritional Information</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              {calculatedNutrition &&
-                Object.entries(calculatedNutrition).map(([key, value]) => (
-                  <div key={key} className="bg-green-100 p-4 rounded-lg shadow-md transition hover:bg-green-200">
-                    <div className="text-xl font-bold text-green-800">
-                      {typeof value === "number" ? value.toFixed(1) : value}
-                      {key === "calories" ? "" : "g"}
-                    </div>
-                    <div className="text-sm text-gray-600 capitalize">{key}</div>
-                  </div>
+          {/* Right Side - Details */}
+          <Grid item xs={12} md={6}>
+            <Box sx={{ p: 4 }}>
+              <Typography variant="h5" gutterBottom>
+                Nutritional Information
+              </Typography>
+
+              <Grid container spacing={2} sx={{ mb: 4 }}>
+                {calculatedNutrition && Object.entries(calculatedNutrition).map(([key, value]) => (
+                  <Grid item xs={6} sm={3} key={key}>
+                    <Paper
+                      elevation={2}
+                      sx={{
+                        p: 2,
+                        textAlign: 'center',
+                        height: '100%',
+                        transition: '0.3s',
+                        '&:hover': {
+                          transform: 'translateY(-5px)',
+                          boxShadow: 6
+                        }
+                      }}
+                    >
+                      <Typography variant="h6" color="primary">
+                        {value}
+                        {key === 'calories' ? '' : 'g'}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {key.charAt(0).toUpperCase() + key.slice(1)}
+                      </Typography>
+                    </Paper>
+                  </Grid>
                 ))}
-            </div>
+              </Grid>
 
-            {/* Servings Control */}
-            <h3 className="font-semibold text-lg mb-2">Servings</h3>
-            <div className="flex items-center gap-4 mb-4 border-t pt-4 border-gray-300">
-              <button
-                onClick={() => setServings(Math.max(0.5, servings - 0.5))}
-                className="p-2 text-green-600 hover:bg-green-100 rounded-full transition"
+              <Divider sx={{ my: 3 }} />
+
+              <Typography variant="h6" gutterBottom>
+                Servings
+              </Typography>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <IconButton
+                  onClick={() => setServings(Math.max(1, servings - 1))}
+                  color="primary"
+                >
+                  <RemoveIcon />
+                </IconButton>
+                <Typography variant="h5" sx={{ mx: 3 }}>
+                  {servings}
+                </Typography>
+                <IconButton
+                  onClick={() => setServings(servings + 1)}
+                  color="primary"
+                >
+                  <AddIcon />
+                </IconButton>
+              </Box>
+
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" color="primary" gutterBottom>
+                  Total Price
+                </Typography>
+                <Typography variant="h4">
+                  ₹{(dish.price * servings).toFixed(2)}
+                </Typography>
+              </Box>
+
+              <Button
+                variant="contained"
+                size="large"
+                fullWidth
+                startIcon={<ShoppingCart />}
+                onClick={handleAddToCart}
+                sx={{
+                  py: 1.5,
+                  borderRadius: 2,
+                  background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                  boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #2196F3 60%, #21CBF3 90%)',
+                  }
+                }}
               >
-                <MinusCircle size={24} />
-              </button>
-              <span className="w-16 text-center text-xl font-bold">{servings}</span>
-              <button
-                onClick={() => setServings(servings + 0.5)}
-                className="p-2 text-green-600 hover:bg-green-100 rounded-full transition"
-              >
-                <PlusCircle size={24} />
-              </button>
-            </div>
+                Add to Cart
+              </Button>
+            </Box>
+          </Grid>
+        </Grid>
+      </Paper>
 
-            {/* Ingredients and Info */}
-            <h3 className="font-semibold text-lg mb-2">Ingredients</h3>
-            <p className="text-gray-600 mb-4">{dish.items?.map((item) => item.name).join(", ")}</p>
-
-            {dish.dietaryInfo && (
-              <>
-                <h3 className="font-semibold text-lg mb-2">Dietary Info</h3>
-                <p className="text-gray-600 mb-4">{dish.dietaryInfo.join(", ")}</p>
-              </>
-            )}
-            
-            {dish.allergens && (
-              <>
-                <h3 className="font-semibold text-lg mb-2">Allergens</h3>
-                <p className="text-gray-600 mb-4">{dish.allergens.join(", ")}</p>
-              </>
-            )}
-            
-            {dish.prepTime && (
-              <>
-                <h3 className="font-semibold text-lg mb-2">Prep Time</h3>
-                <p className="text-gray-600">{dish.prepTime}</p>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+      <Snackbar
+        open={showAlert}
+        autoHideDuration={3000}
+        onClose={() => setShowAlert(false)}
+      >
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={() => setShowAlert(false)}
+        >
+          Added to cart successfully!
+        </Alert>
+      </Snackbar>
+    </Container>
   );
 };
 
-export default DishTracker;
+export default CalorieCalculator;

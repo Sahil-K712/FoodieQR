@@ -1,11 +1,15 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline, Box, Container, Typography } from '@mui/material';
+import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import DishGrid from './components/QRGenerator/DishGrid';
 import Login from './components/QRGenerator/Login';
 import Signup from './components/QRGenerator/SignUp';
 import CalorieCalculator from './components/QRGenerator/CalorieCalculator';
+import Cart from './components/Cart/Cart'; // New
+import OrderHistory from './components/Orders/OrderHistory'; // New
+import Navbar from './components/Layout/Navbar'; // New
 import { AuthProvider } from './context/AuthContext';
+import { CartProvider } from './context/CartContext'; // New
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Create a custom theme
@@ -62,34 +66,57 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+        <CartProvider> {/* New Provider */}
+          <BrowserRouter>
+            <Navbar /> {/* New Navigation Component */}
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
 
-            {/* Protected Routes */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <DishGrid />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/calculator/:id"
-              element={
-                <ProtectedRoute>
-                  <CalorieCalculator />
-                </ProtectedRoute>
-              }
-            />
+              {/* Protected Routes */}
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <DishGrid />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Redirect all other routes to login */}
-            <Route path="*" element={<Navigate to="/login" />} />
-          </Routes>
-        </BrowserRouter>
+
+              <Route
+                path="/calculator"
+                element={
+                  <ProtectedRoute>
+                    <CalorieCalculator />
+                  </ProtectedRoute>
+                }
+              />
+
+
+<Route
+                path="/cart"
+                element={
+                  <ProtectedRoute>
+                    <Cart />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/orders"
+                element={
+                  <ProtectedRoute>
+                    <OrderHistory />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Redirect all other routes to login */}
+              <Route path="*" element={<Navigate to="/login" />} />
+            </Routes>
+          </BrowserRouter>
+        </CartProvider>
       </AuthProvider>
     </ThemeProvider>
   );

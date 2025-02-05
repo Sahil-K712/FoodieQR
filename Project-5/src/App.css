@@ -18,21 +18,21 @@
   }
   
   /* Custom scrollbar */
-  ::-webkit-scrollbar {
+  ::-WebkitScrollbar {
     width: 8px;
   }
   
-  ::-webkit-scrollbar-track {
+  ::-WebkitSscrollbarTrack {
     background: #f1f1f1;
     border-radius: 4px;
   }
   
-  ::-webkit-scrollbar-thumb {
+  ::-WebkitScrollbarThumb {
     background: #888;
     border-radius: 4px;
   }
   
-  ::-webkit-scrollbar-thumb:hover {
+  ::-WebkitScrollbarThumb:hover {
     background: #555;
   }
   
