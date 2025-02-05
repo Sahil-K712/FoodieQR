@@ -44,10 +44,13 @@ const CalorieCalculator = () => {
       const dishData = params.get('data');
       if (dishData) {
         const parsedDish = JSON.parse(decodeURIComponent(dishData));
+        console.log('Parsed dish data:', parsedDish); // Add this line
         setDish(parsedDish);
         setCalculatedNutrition(calculateNutrition(parsedDish.totalNutrition, servings));
       }
     } catch (err) {
+
+      console.error('Error parsing dish data:', err); // Add this line
       setError('Invalid dish data');
     }
     setLoading(false);
@@ -72,6 +75,7 @@ const CalorieCalculator = () => {
       id: dish.id,
       name: dish.name,
       price: dish.price,
+      image: dish.image, // Make sure this is included
       quantity: servings,
       totalPrice: dish.price * servings,
       nutrition: calculatedNutrition
@@ -82,10 +86,10 @@ const CalorieCalculator = () => {
 
   if (loading) {
     return (
-      <Box 
-        display="flex" 
-        justifyContent="center" 
-        alignItems="center" 
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
         minHeight="100vh"
         sx={{ background: 'linear-gradient(145deg, #f6f8ff 0%, #f0f4ff 100%)' }}
       >
@@ -118,7 +122,7 @@ const CalorieCalculator = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Paper 
+      <Paper
         elevation={3}
         sx={{
           overflow: 'hidden',
@@ -134,22 +138,24 @@ const CalorieCalculator = () => {
                 height: '100%',
                 minHeight: 400,
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                backgroundColor: '#f5f5f5' // Add background color for better loading appearance
               }}
             >
               <motion.img
                 initial={{ scale: 1.1 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.5 }}
-                src={`/images/dishes/${dish.image}`}
+                src={dish.image ? `/images/dishes/${dish.image}` : 'https://via.placeholder.com/400x400?text=Food+Image'}
                 alt={dish.name}
+                onError={(e) => {
+                  console.log('Image failed to load:', e);
+                  e.target.src = 'https://via.placeholder.com/400x400?text=Food+Image';
+                }}
                 style={{
                   width: '100%',
                   height: '100%',
                   objectFit: 'cover'
-                }}
-                onError={(e) => {
-                  e.target.src = 'https://via.placeholder.com/400x400?text=Food+Image';
                 }}
               />
               <Box
@@ -213,7 +219,7 @@ const CalorieCalculator = () => {
               <Typography variant="h6" gutterBottom>
                 Servings
               </Typography>
-              
+
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                 <IconButton
                   onClick={() => setServings(Math.max(1, servings - 1))}

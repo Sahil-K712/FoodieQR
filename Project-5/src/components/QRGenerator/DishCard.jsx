@@ -23,7 +23,9 @@ const DishCard = ({ dish, index }) => {
             id: dish.id,
             name: dish.name,
             price: dish.price,
-            totalNutrition: dish.totalNutrition
+            totalNutrition: dish.totalNutrition,
+            image: dish.image, 
+            prepTime: dish.prepTime 
         };
     };
 
