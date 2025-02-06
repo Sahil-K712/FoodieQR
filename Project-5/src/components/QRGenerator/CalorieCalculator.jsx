@@ -263,7 +263,7 @@ const CalorieCalculator = () => {
                   }
                 }}
               >
-                Add to Cart
+                Send to kitchen
               </Button>
             </Box>
           </Grid>
@@ -280,7 +280,7 @@ const CalorieCalculator = () => {
           variant="filled"
           onClose={() => setShowAlert(false)}
         >
-          Added to cart successfully!
+           Order sent to kitchen successfully!
         </Alert>
       </Snackbar>
     </Container>

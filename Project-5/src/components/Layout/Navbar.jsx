@@ -1,7 +1,7 @@
 // src/components/Layout/Navbar.jsx
 import React from 'react';
 import { AppBar, Toolbar, Typography, Button, Badge } from '@mui/material';
-import { ShoppingCart, History, Restaurant } from '@mui/icons-material';
+import { ShoppingCart, History, Restaurant, RestaurantMenu } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext'; // Assuming you have this
@@ -30,12 +30,12 @@ const Navbar = () => {
           color="inherit"
           startIcon={
             <Badge badgeContent={cartItems.length} color="secondary">
-              <ShoppingCart />
+              <RestaurantMenu />
             </Badge>
           }
           onClick={() => navigate('/cart')}
         >
-          Cart
+          Your Orders
         </Button>
         
         <Button 
@@ -43,7 +43,7 @@ const Navbar = () => {
           startIcon={<History />}
           onClick={() => navigate('/orders')}
         >
-          Orders
+          Kitchen
         </Button>
         
         <Button 

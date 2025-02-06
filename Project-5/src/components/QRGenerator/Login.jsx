@@ -1,5 +1,5 @@
 // Login.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     TextField,
@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 // Add your image paths here
@@ -77,9 +77,24 @@ const ImagePanel = styled(Box)(({ theme }) => ({
     },
 }));
 
+
+// Add these validation functions at the top of your file
+const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+};
+
+const validatePassword = (password) => {
+    // Minimum 6 characters, at least 1 letter and 1 number
+    return password.length >= 6 &&
+        /[A-Za-z]/.test(password) &&
+        /[0-9]/.test(password);
+};
+
 const Login = () => {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const location = useLocation(); // Add this
+    const { login, setMessage } = useAuth(); // Add setMessage
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -88,11 +103,27 @@ const Login = () => {
         password: ''
     });
 
+    const [formErrors, setFormErrors] = useState({
+        email: '',
+        password: ''
+    });
+
+    // Add this useEffect to show "Please login first" message
+    useEffect(() => {
+        if (location.state?.message) {
+            setError(location.state.message);
+        }
+    }, [location]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
+        
+        if (!formData.email || !formData.password) {
+            setError('Please fill in all fields');
+            return;
+        }
+    
         setLoading(true);
-
         try {
             await new Promise(resolve => setTimeout(resolve, 1000));
             login({
@@ -100,7 +131,7 @@ const Login = () => {
                 email: formData.email,
                 name: 'Test User'
             });
-            navigate('/', { replace: true });
+            navigate('/', { replace: true }); // This will redirect to QR menu page
         } catch (err) {
             setError('Login failed. Please try again.');
         } finally {
@@ -108,15 +139,23 @@ const Login = () => {
         }
     };
 
+
+
+
+
+
+
+
+
     return (
         <Box
-        sx={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            background: 'linear-gradient(135deg, #f0fff4 0%, #f0f9ff 100%)',
-        }}
-    >
+            sx={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                background: 'linear-gradient(135deg, #f0fff4 0%, #f0f9ff 100%)',
+            }}
+        >
             <Grid container spacing={3} sx={{ minHeight: '100vh' }}>
                 {/* Left side - Login Form */}
                 <Grid
@@ -154,10 +193,10 @@ const Login = () => {
                             </Typography>
 
                             {error && (
-                                <Alert 
-                                    severity="error" 
-                                    sx={{ 
-                                        mb: 3, 
+                                <Alert
+                                    severity="error"
+                                    sx={{
+                                        mb: 3,
                                         borderRadius: '12px',
                                         fontSize: '1rem'
                                     }}
@@ -166,34 +205,66 @@ const Login = () => {
                                 </Alert>
                             )}
 
+
+
+                            {/* Add the new Alert here */}
+                            {location.state?.newUser && (
+                                <Alert
+                                    severity="info"
+                                    sx={{
+                                        mb: 3,
+                                        borderRadius: '12px',
+                                        fontSize: '1rem'
+                                    }}
+                                >
+                                    Account created successfully! Please login.
+                                </Alert>
+                            )}
+
                             <form onSubmit={handleSubmit}>
+
+
                                 <StyledTextField
                                     required
                                     fullWidth
                                     label="Email Address"
                                     type="email"
                                     value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, email: e.target.value });
+                                        if (formErrors.email) {
+                                            setFormErrors({ ...formErrors, email: '' });
+                                        }
+                                    }}
+                                    error={!!formErrors.email}
+                                    helperText={formErrors.email}
                                     InputProps={{
                                         startAdornment: (
                                             <InputAdornment position="start">
-                                                <Email sx={{ color: '#666666' }} />
+                                                <Email sx={{ color: formErrors.email ? 'error.main' : '#666666' }} />
                                             </InputAdornment>
                                         ),
                                     }}
                                 />
-                                
+
                                 <StyledTextField
                                     required
                                     fullWidth
                                     label="Password"
                                     type={showPassword ? 'text' : 'password'}
                                     value={formData.password}
-                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, password: e.target.value });
+                                        if (formErrors.password) {
+                                            setFormErrors({ ...formErrors, password: '' });
+                                        }
+                                    }}
+                                    error={!!formErrors.password}
+                                    helperText={formErrors.password}
                                     InputProps={{
                                         startAdornment: (
                                             <InputAdornment position="start">
-                                                <Lock sx={{ color: '#666666' }} />
+                                                <Lock sx={{ color: formErrors.password ? 'error.main' : '#666666' }} />
                                             </InputAdornment>
                                         ),
                                         endAdornment: (
@@ -202,8 +273,8 @@ const Login = () => {
                                                     onClick={() => setShowPassword(!showPassword)}
                                                     edge="end"
                                                 >
-                                                    {showPassword ? 
-                                                        <VisibilityOff sx={{ color: '#666666' }} /> : 
+                                                    {showPassword ?
+                                                        <VisibilityOff sx={{ color: '#666666' }} /> :
                                                         <Visibility sx={{ color: '#666666' }} />
                                                     }
                                                 </IconButton>
@@ -241,9 +312,9 @@ const Login = () => {
                                 </Button>
 
                                 <Box sx={{ textAlign: 'center' }}>
-                                    <Typography 
-                                        variant="body1" 
-                                        sx={{ 
+                                    <Typography
+                                        variant="body1"
+                                        sx={{
                                             color: '#666666',
                                             fontSize: '1rem'
                                         }}
@@ -280,9 +351,9 @@ const Login = () => {
                         p: 3,
                     }}
                 >
-                    <Grid 
-                        container 
-                        spacing={2} 
+                    <Grid
+                        container
+                        spacing={2}
                         sx={{ height: '100%' }}
                     >
                         {foodImages.map((image, index) => (

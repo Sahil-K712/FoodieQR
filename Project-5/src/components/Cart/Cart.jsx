@@ -1,5 +1,5 @@
-// src/components/Cart/Cart.jsx
-import React from 'react';
+// Cart.jsx - Restaurant Style
+import React, { useState } from 'react';
 import {
   Box,
   Container,
@@ -13,9 +13,20 @@ import {
   TextField,
   Alert,
   Snackbar,
-  CardMedia
+  Radio,
+  RadioGroup,
+  FormControlLabel
 } from '@mui/material';
-import { Add, Remove, Delete, ShoppingBag, Restaurant } from '@mui/icons-material';
+import {
+  Add,
+  Remove,
+  Delete,
+  Restaurant,
+  RoomService,
+  RestaurantMenu,
+  TableBar,
+  Kitchen
+} from '@mui/icons-material';
 import { useCart } from '../../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -23,8 +34,12 @@ import { motion } from 'framer-motion';
 const Cart = () => {
   const { cartItems, totalAmount, updateQuantity, removeFromCart, clearCart } = useCart();
   const navigate = useNavigate();
-  const [orderPlaced, setOrderPlaced] = React.useState(false);
-  const [imageErrors, setImageErrors] = React.useState({});
+  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [imageErrors, setImageErrors] = useState({});
+  const [diningOption, setDiningOption] = useState('dineIn'); // 'dineIn' or 'takeaway'
+  const [tableNumber, setTableNumber] = useState('');
+  const [specialInstructions, setSpecialInstructions] = useState('');
+  const [showAlert, setShowAlert] = useState({ show: false, message: '', type: 'success' });
 
   const handleQuantityChange = (itemId, newQuantity) => {
     if (newQuantity >= 1) {
@@ -33,11 +48,23 @@ const Cart = () => {
   };
 
   const handlePlaceOrder = () => {
+    if (diningOption === 'dineIn' && !tableNumber) {
+      setShowAlert({
+        show: true,
+        message: 'Please enter your table number',
+        type: 'error'
+      });
+      return;
+    }
+
     const order = {
       items: cartItems,
       totalAmount,
       orderDate: new Date().toISOString(),
-      status: 'pending'
+      status: 'preparing',
+      diningOption,
+      tableNumber: diningOption === 'dineIn' ? tableNumber : null,
+      specialInstructions
     };
 
     const orders = JSON.parse(localStorage.getItem('orders') || '[]');
@@ -60,9 +87,9 @@ const Cart = () => {
           transition={{ duration: 0.5 }}
         >
           <Box sx={{ py: 8 }}>
-            <ShoppingBag sx={{ fontSize: 60, color: 'grey.400', mb: 2 }} />
+            <Restaurant sx={{ fontSize: 60, color: 'grey.400', mb: 2 }} />
             <Typography variant="h5" color="text.secondary" gutterBottom>
-              Your cart is empty
+              Your order is empty
             </Typography>
             <Button
               variant="contained"
@@ -70,7 +97,7 @@ const Cart = () => {
               onClick={() => navigate('/')}
               sx={{ mt: 2 }}
             >
-              Browse Menu
+              View Menu
             </Button>
           </Box>
         </motion.div>
@@ -79,9 +106,9 @@ const Cart = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 8 }}>
       <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
-        Your Cart
+        Your Order
       </Typography>
       
       <Grid container spacing={3}>
@@ -96,6 +123,7 @@ const Cart = () => {
               <Card sx={{ mb: 2, overflow: 'hidden' }}>
                 <CardContent>
                   <Grid container spacing={2} alignItems="center">
+                    {/* Image Section */}
                     <Grid item xs={12} sm={3}>
                       <Box
                         sx={{
@@ -140,6 +168,7 @@ const Cart = () => {
                       </Box>
                     </Grid>
                     
+                    {/* Dish Details */}
                     <Grid item xs={12} sm={4}>
                       <Typography variant="h6" sx={{ mb: 1 }}>{item.name}</Typography>
                       <Typography color="text.secondary">
@@ -147,6 +176,7 @@ const Cart = () => {
                       </Typography>
                     </Grid>
                     
+                    {/* Quantity Controls */}
                     <Grid item xs={12} sm={3}>
                       <Box display="flex" alignItems="center" justifyContent="center">
                         <IconButton
@@ -176,6 +206,7 @@ const Cart = () => {
                       </Box>
                     </Grid>
                     
+                    {/* Price and Remove */}
                     <Grid item xs={12} sm={2}>
                       <Box sx={{ textAlign: 'right' }}>
                         <Typography variant="h6" color="primary">
@@ -201,35 +232,89 @@ const Cart = () => {
         <Grid item xs={12} md={4}>
           <Card elevation={3}>
             <CardContent>
+              {/* Dining Options */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Dining Option
+                </Typography>
+                <RadioGroup
+                  value={diningOption}
+                  onChange={(e) => setDiningOption(e.target.value)}
+                >
+                  <FormControlLabel
+                    value="dineIn"
+                    control={<Radio />}
+                    label={
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <TableBar />
+                        <Typography>Dine In</Typography>
+                      </Box>
+                    }
+                  />
+                  <FormControlLabel
+                    value="takeaway"
+                    control={<Radio />}
+                    label={
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <RoomService />
+                        <Typography>Takeaway</Typography>
+                      </Box>
+                    }
+                  />
+                </RadioGroup>
+              </Box>
+
+              {/* Table Number (for Dine In) */}
+              {diningOption === 'dineIn' && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Table Number
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="Enter your table number"
+                    value={tableNumber}
+                    onChange={(e) => setTableNumber(e.target.value)}
+                  />
+                </Box>
+              )}
+
+              {/* Special Instructions */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Special Instructions
+                </Typography>
+                <TextField
+                  multiline
+                  rows={2}
+                  fullWidth
+                  placeholder="Any special requests for your order?"
+                  value={specialInstructions}
+                  onChange={(e) => setSpecialInstructions(e.target.value)}
+                />
+              </Box>
+
+              {/* Order Summary */}
               <Typography variant="h6" gutterBottom>
                 Order Summary
               </Typography>
               <Divider sx={{ my: 2 }} />
               
               <Box display="flex" justifyContent="space-between" mb={2}>
-                <Typography>Subtotal</Typography>
-                <Typography>₹{totalAmount.toFixed(2)}</Typography>
-              </Box>
-              
-              <Box display="flex" justifyContent="space-between" mb={2}>
-                <Typography>Delivery Fee</Typography>
-                <Typography>₹40.00</Typography>
-              </Box>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Box display="flex" justifyContent="space-between" mb={3}>
-                <Typography variant="h6">Total</Typography>
+                <Typography variant="h6">Total Amount</Typography>
                 <Typography variant="h6" color="primary">
-                  ₹{(totalAmount + 40).toFixed(2)}
+                  ₹{totalAmount.toFixed(2)}
                 </Typography>
               </Box>
-              
+
+              {/* Place Order Button */}
               <Button
                 variant="contained"
                 fullWidth
                 size="large"
                 onClick={handlePlaceOrder}
+                startIcon={<RoomService />}
                 sx={{
                   py: 1.5,
                   borderRadius: 2,
@@ -246,6 +331,20 @@ const Cart = () => {
           </Card>
         </Grid>
       </Grid>
+
+      <Snackbar
+        open={showAlert.show}
+        autoHideDuration={3000}
+        onClose={() => setShowAlert({ ...showAlert, show: false })}
+      >
+        <Alert
+          severity={showAlert.type}
+          variant="filled"
+          onClose={() => setShowAlert({ ...showAlert, show: false })}
+        >
+          {showAlert.message}
+        </Alert>
+      </Snackbar>
 
       <Snackbar
         open={orderPlaced}
